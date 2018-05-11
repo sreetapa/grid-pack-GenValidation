@@ -1,5 +1,7 @@
 # grid-pack-GenValidation
-cerate cmsenv with specific release and put the NtupleGenJet directory in CMSSW/src within a directory
+cerate cmsenv with specific CMSSW release and go to src area
+
+do "git clone git@github.com:panwarlsweet/grid-pack-GenValidation.git GenValidation/NtupleGenJet"
 
 do "scram b" in src area 
 
