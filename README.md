@@ -1,7 +1,7 @@
 # grid-pack-GenValidation
 cerate cmsenv with specific release and put the NtupleGenJet directory in CMSSW/src within a directory
 
-do "scram b"
+do "scram b" in src area 
 
 change GEN-SIM input file name in test/runAnalyzer.py  
 
