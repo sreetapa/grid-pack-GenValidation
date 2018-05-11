@@ -35,7 +35,6 @@
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
-#include "DataFormats/JetReco/interface/GenJet.h"
 #include "DataFormats/JetReco/interface/GenJetCollection.h"
 #include "TTree.h"
 #include "TH1.h"
@@ -62,19 +61,23 @@ class NtupleGenJet : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
 
       // ----------member data ---------------------------
-       edm::EDGetTokenT <reco::GenJetCollection> genJetsToken;
+       edm::EDGetTokenT <reco::GenParticleCollection> genparticlesToken;
 	
-        int genjet_n_;
-        TH1D *njet_histo;
-        TH1F *pt_histo_lead;
-        TH1F *eta_histo_lead;
-  	TH1F *phi_histo_lead;
-	TH1F *pt_histo_sublead;
-        TH1F *eta_histo_sublead;
-        TH1F *phi_histo_sublead;
-	TH1F *pt_histo_3rdlead;
-        TH1F *eta_histo_3rdlead;
-        TH1F *phi_histo_3rdlead;
+        int genHiggs_n_=0;
+        TH1D *nHiggs_histo;
+        TH1F *pt_histo;
+        TH1F *eta_histo;
+	TH1F *phi_histo;  
+	TH1F *mass_histo;
+	TH1F *pt_histo_lead_b;
+        TH1F *eta_histo_lead_b;
+        TH1F *phi_histo_lead_b;
+	TH1F *pt_histo_sublead_b;
+        TH1F *eta_histo_sublead_b;
+        TH1F *phi_histo_sublead_b;
+	TH1F *pt_histo_add_b;
+        TH1F *eta_histo_add_b;
+        TH1F *phi_histo_add_b;
 };
 
 //
@@ -92,19 +95,22 @@ NtupleGenJet::NtupleGenJet(const edm::ParameterSet& iConfig)
 {
    //now do what ever initialization is needed
    usesResource("TFileService");
-   genJetsToken	   = consumes <reco::GenJetCollection> (std::string("ak4GenJets"));
+   genparticlesToken	   = consumes <reco::GenParticleCollection> (std::string("genParticles"));
    edm::Service<TFileService> fs;
-   njet_histo = fs->make<TH1D>("Njet" , ";Njet;Events;;" , 50 , 0 , 50 );
-   pt_histo_lead = fs->make<TH1F>("pT1" , ";p_{T}leading AK4Jet[GeV];Events;;" , 100 , 0 , 500 );
-   eta_histo_lead=fs->make<TH1F>("eta1" , ";#eta leading AK4Jet;Events;;" , 50 , -5 , 5 );
-   phi_histo_lead=fs->make<TH1F>("phi1" , ";#phi leading AK4Jet;Events;;" , 50 , -5 , 5 );
-   pt_histo_sublead = fs->make<TH1F>("pT2" , ";p_{T}subleading AK4Jet[GeV];Events;;" , 100 , 0 , 500 );
-   eta_histo_sublead=fs->make<TH1F>("eta2" , ";#eta subleading AK4Jet;Events;;" , 50 , -5 , 5 );
-   phi_histo_sublead=fs->make<TH1F>("phi2" , ";#phi subleading AK4Jet;Events;;" , 50 , -5 , 5 );
-   pt_histo_3rdlead = fs->make<TH1F>("pT3" , ";p_{T}3rd leading AK4Jet[GeV];Events;;" , 100 , 0 , 500 );
-   eta_histo_3rdlead=fs->make<TH1F>("eta3" , ";#eta 3rd leading AK4Jet;Events;;" , 50 , -5 , 5 );
-   phi_histo_3rdlead=fs->make<TH1F>("phi3" , ";#phi 3rd leading AK4Jet;Events;;" , 50 , -5 , 5 );
-
+   nHiggs_histo = fs->make<TH1D>("N_higgs" , ";N_{H};Events;;" , 50 , 0 , 50 );
+   pt_histo = fs->make<TH1F>("pT_H" , ";p_{T} of Higgs[GeV];Events;;" , 100 , 0 , 500 );
+   eta_histo=fs->make<TH1F>("eta_H" , ";#eta of Higgs;Events;;" , 50 , -5 , 5 );
+   phi_histo=fs->make<TH1F>("phi_H" , ";#phi of Higgs;Events;;" , 50 , -5 , 5 );
+   mass_histo=fs->make<TH1F>("mass_H" , ";mass of Higgs;Events;;" , 100,0,500);
+   pt_histo_lead_b = fs->make<TH1F>("pT_b1" , ";p_{T} of leading b[GeV];Events;;" , 100 , 0 , 500 );
+   eta_histo_lead_b=fs->make<TH1F>("eta_b1" , ";#eta of leading b;Events;;" , 50 , -5 , 5 );
+   phi_histo_lead_b=fs->make<TH1F>("phi_b1" , ";#phi of leading b;Events;;" , 50 , -5 , 5 );
+   pt_histo_sublead_b = fs->make<TH1F>("pT_b2" , ";p_{T} of sub-leading b[GeV];Events;;" , 100 , 0 , 500 );
+   eta_histo_sublead_b=fs->make<TH1F>("eta_b2" , ";#eta of sub-leading b;Events;;" , 50 , -5 , 5 );
+   phi_histo_sublead_b=fs->make<TH1F>("phi_b2" , ";#phi of sub-leading b;Events;;" , 50 , -5 , 5 );
+   pt_histo_add_b = fs->make<TH1F>("pT_b" , ";p_{T} of additional b[GeV];Events;;" , 100 , 0 , 500 );
+   eta_histo_add_b=fs->make<TH1F>("eta_b" , ";#eta of additional b;Events;;" , 50 , -5 , 5 );
+   phi_histo_add_b=fs->make<TH1F>("phi_b" , ";#phi of additional b;Events;;" , 50 , -5 , 5 );
 }
 
 
@@ -126,33 +132,47 @@ void
 NtupleGenJet::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 
-    edm::Handle< reco::GenJetCollection > genjets_h;
-    iEvent.getByToken(genJetsToken, genjets_h);
-    const reco::GenJetCollection& genjets = *genjets_h;
-   
-
-    genjet_n_ = genjets.size();
+    edm::Handle<reco::GenParticleCollection> genParticles;
+    iEvent.getByToken(genparticlesToken, genParticles);
+//for(reco::GenParticle jet : *(gen_h.product())){
+ // for(const auto& jet : genparticles){ 
+   for(size_t i = 0; i < genParticles->size(); ++ i) {
+     const reco::GenParticle & p = (*genParticles)[i];
+     int id = p.pdgId();
+     int st = p.status();  
+//     double pt = p.pt(), eta = p.eta(), phi = p.phi(), mass = p.mass();
+     if (id == 25){
+    int n = p.numberOfDaughters();
+    if(n < 2 ) continue;
+    const reco::Candidate * d1 = p.daughter( 0 );
+    const reco::Candidate * d2 = p.daughter( 1 );
+    if (std::abs(d1->pdgId())==5 && std::abs(d2->pdgId())==5){
+     ++genHiggs_n_;
+     nHiggs_histo->Fill(genHiggs_n_);
+     pt_histo->Fill(p.pt());
+     eta_histo->Fill(p.eta());
+     phi_histo ->Fill(p.phi());
+     mass_histo->Fill(p.mass());
+     //// plotting for b's
+    pt_histo_lead_b->Fill(d1->pt());
+    eta_histo_lead_b->Fill(d1->eta());
+    phi_histo_lead_b->Fill(d1->phi());
     
-    njet_histo->Fill(genjet_n_);
+    pt_histo_sublead_b->Fill(d2->pt());
+    eta_histo_sublead_b->Fill(d2->eta());
+    phi_histo_sublead_b->Fill(d2->phi());
+     }
+    }
 
-    pt_histo_lead->Fill(genjets.at(0).pt());
-    eta_histo_lead->Fill(genjets.at(0).eta());
-    phi_histo_lead->Fill(genjets.at(0).phi());
-    
-    pt_histo_sublead->Fill(genjets.at(1).pt());
-    eta_histo_sublead->Fill(genjets.at(1).eta());
-    phi_histo_sublead->Fill(genjets.at(1).phi());
-  
-    pt_histo_3rdlead->Fill(genjets.at(2).pt());
-    eta_histo_3rdlead->Fill(genjets.at(2).eta());
-    phi_histo_3rdlead->Fill(genjets.at(2).phi());
-
-    //std::cout << genjet_n_<<std::endl;
-    //for(const auto& jet : genjets.at(0)){
-       //std::cout <<"pt="<< jet.pt();
-      // pt_histo->Fill(jet.pt());
-      // eta_histo->Fill(jet.eta());
-   //}
+   if(id == 5 || id == -5){
+      const reco::Candidate * mom = p.mother();
+    if (mom->pdgId()!=25){
+    pt_histo_add_b->Fill(p.pt());
+    eta_histo_add_b->Fill(p.eta());
+    phi_histo_add_b->Fill(p.phi());
+	    }
+	}
+   }
 }
 
 

@@ -9,20 +9,20 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
 process.source = cms.Source("PoolSource",
                                 # replace 'myfile.root' with the source file you want to use
                                 fileNames = cms.untracked.vstring(
-            'file:../../../../../2016_LHEs/HIG-RunIISummer15wmLHEGS-01479.root'
+            'file:/afs/cern.ch/work/l/lata/grid_pack/genproductions/bin/JHUGen/production_validation_HIG/susy_gridpack_validation/2016_LHEs/HIG-RunIISummer15wmLHEGS-01479.root'
                 )
                             )
 
 
-ntuple_genjet = cms.PSet(
-    NtupleName = cms.string('NtupleGenJet'),
-    GenJets = cms.InputTag('ak4GenJets')
-)
 
+ntuple_genHiggs = cms.PSet(
+     NtupleName = cms.string('NtupleGenJet'),
+     genParticles = cms.InputTag('genParticles'),
+)
 process.demo = cms.EDAnalyzer(
     "NtupleGenJet",
     Ntuples = cms.VPSet(
-        ntuple_genjet,
+	ntuple_genHiggs,
     )
 )
 process.TFileService = cms.Service("TFileService",
