@@ -139,39 +139,43 @@ NtupleGenJet::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    for(size_t i = 0; i < genParticles->size(); ++ i) {
      const reco::GenParticle & p = (*genParticles)[i];
      int id = p.pdgId();
-     int st = p.status();  
-//     double pt = p.pt(), eta = p.eta(), phi = p.phi(), mass = p.mass();
-     if (id == 25){
-    int n = p.numberOfDaughters();
-    if(n < 2 ) continue;
-    const reco::Candidate * d1 = p.daughter( 0 );
-    const reco::Candidate * d2 = p.daughter( 1 );
-    if (std::abs(d1->pdgId())==5 && std::abs(d2->pdgId())==5){
-     ++genHiggs_n_;
-     nHiggs_histo->Fill(genHiggs_n_);
-     pt_histo->Fill(p.pt());
-     eta_histo->Fill(p.eta());
-     phi_histo ->Fill(p.phi());
-     mass_histo->Fill(p.mass());
-     //// plotting for b's
-    pt_histo_lead_b->Fill(d1->pt());
-    eta_histo_lead_b->Fill(d1->eta());
-    phi_histo_lead_b->Fill(d1->phi());
-    
-    pt_histo_sublead_b->Fill(d2->pt());
-    eta_histo_sublead_b->Fill(d2->eta());
-    phi_histo_sublead_b->Fill(d2->phi());
+     //int st = p.status();  
+     //     double pt = p.pt(), eta = p.eta(), phi = p.phi(), mass = p.mass();
+     //std::cout << "pdg id =  "<< id << std::endl;
+     if (id == 25){ // check if it is H
+       int n = p.numberOfDaughters();
+       if(n < 2 ) continue;
+       //std::cout << "number of daughter:  " << n << std::endl;
+       const reco::Candidate * d1 = p.daughter( 0 );
+       const reco::Candidate * d2 = p.daughter( 1 );
+       //std::cout << "pdg id of d1=  " << d1->pdgId() << " pdg id of d2=  " << d2->pdgId() << std::endl;
+       
+       if (std::abs(d1->pdgId())==15 && std::abs(d2->pdgId())==15){ // check when H decays to tau tau
+	 ++genHiggs_n_;
+	 nHiggs_histo->Fill(genHiggs_n_); // mind it will give a flat histogram at "1" for every entries
+	 pt_histo->Fill(p.pt());
+	 eta_histo->Fill(p.eta());
+	 phi_histo ->Fill(p.phi());
+	 mass_histo->Fill(p.mass());
+	 //// plotting for b's
+	 pt_histo_lead_b->Fill(d1->pt());
+	 eta_histo_lead_b->Fill(d1->eta());
+	 phi_histo_lead_b->Fill(d1->phi());
+	 
+	 pt_histo_sublead_b->Fill(d2->pt());
+	 eta_histo_sublead_b->Fill(d2->eta());
+	 phi_histo_sublead_b->Fill(d2->phi());
+       }
      }
-    }
-
-   if(id == 5 || id == -5){
-      const reco::Candidate * mom = p.mother();
-    if (mom->pdgId()!=25){
-    pt_histo_add_b->Fill(p.pt());
-    eta_histo_add_b->Fill(p.eta());
-    phi_histo_add_b->Fill(p.phi());
-	    }
-	}
+     
+     if(id == 5 || id == -5){
+       const reco::Candidate * mom = p.mother();
+       if (mom->pdgId()!=25){
+	 pt_histo_add_b->Fill(p.pt());
+	 eta_histo_add_b->Fill(p.eta());
+	 phi_histo_add_b->Fill(p.phi());
+       }
+     }
    }
 }
 
