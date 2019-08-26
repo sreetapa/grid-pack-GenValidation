@@ -10,12 +10,6 @@
  Implementation:
      [Notes on implementation]
 */
-//
-// Original Author:  Lata Panwar
-//         Created:  Wed, 14 Mar 2018 12:41:16 GMT
-//
-//
-
 
 // system include files
 #include <memory>
@@ -39,6 +33,17 @@
 #include "TTree.h"
 #include "TH1.h"
 
+
+#include "Math/VectorUtil.h"
+#include "Math/Point3D.h"
+#include "Math/GenVector/CoordinateSystemTags.h"
+typedef ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<double> > Point3D;
+
+#include "Math/PxPyPzE4D.h"
+#include "Math/LorentzVector.h"
+typedef ROOT::Math::LorentzVector<ROOT::Math::PxPyPzE4D<double> > MyLorentzVector;
+
+using namespace std;
 //
 // class declaration
 //
@@ -63,7 +68,8 @@ class NtupleGenJet : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       // ----------member data ---------------------------
        edm::EDGetTokenT <reco::GenParticleCollection> genparticlesToken;
 	
-        int genHiggs_n_=0;
+        int genHiggs_n_=1;
+  int noOfGenParticle = 0;
         TH1D *nHiggs_histo;
         TH1F *pt_histo;
         TH1F *eta_histo;
@@ -78,6 +84,9 @@ class NtupleGenJet : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 	TH1F *pt_histo_add_b;
         TH1F *eta_histo_add_b;
         TH1F *phi_histo_add_b;
+  TH1D *nTPrimeId;
+  MyLorentzVector genLead, genSublead;
+  TH1F *invMass;
 };
 
 //
@@ -97,11 +106,12 @@ NtupleGenJet::NtupleGenJet(const edm::ParameterSet& iConfig)
    usesResource("TFileService");
    genparticlesToken	   = consumes <reco::GenParticleCollection> (std::string("genParticles"));
    edm::Service<TFileService> fs;
-   nHiggs_histo = fs->make<TH1D>("N_higgs" , ";N_{H};Events;;" , 50 , 0 , 50 );
-   pt_histo = fs->make<TH1F>("pT_H" , ";p_{T} of Higgs[GeV];Events;;" , 100 , 0 , 500 );
-   eta_histo=fs->make<TH1F>("eta_H" , ";#eta of Higgs;Events;;" , 50 , -5 , 5 );
-   phi_histo=fs->make<TH1F>("phi_H" , ";#phi of Higgs;Events;;" , 50 , -5 , 5 );
-   mass_histo=fs->make<TH1F>("mass_H" , ";mass of Higgs;Events;;" , 100,0,500);
+   nTPrimeId = fs->make<TH1D>("N_TPrimeId" , ";T/T' Id;Events;;" , 20 , -10 , 10 );
+   nHiggs_histo = fs->make<TH1D>("N_Tprime" , ";N_{T/T'};Events;;" , 5 , 0 , 5 );
+   pt_histo = fs->make<TH1F>("pT_Tprime" , ";p_{T} of Tprime[GeV];Events;;" , 100 , 0 , 500 );
+   eta_histo=fs->make<TH1F>("eta_Tprime" , ";#eta of Tprime;Events;;" , 50 , -5 , 5 );
+   phi_histo=fs->make<TH1F>("phi_Tprime" , ";#phi of Tprime;Events;;" , 50 , -5 , 5 );
+   mass_histo=fs->make<TH1F>("mass_Tprime" , ";mass of Tprime;Events;;" , 100,200,700);
    pt_histo_lead_b = fs->make<TH1F>("pT_b1" , ";p_{T} of leading b[GeV];Events;;" , 100 , 0 , 500 );
    eta_histo_lead_b=fs->make<TH1F>("eta_b1" , ";#eta of leading b;Events;;" , 50 , -5 , 5 );
    phi_histo_lead_b=fs->make<TH1F>("phi_b1" , ";#phi of leading b;Events;;" , 50 , -5 , 5 );
@@ -111,6 +121,7 @@ NtupleGenJet::NtupleGenJet(const edm::ParameterSet& iConfig)
    pt_histo_add_b = fs->make<TH1F>("pT_b" , ";p_{T} of additional b[GeV];Events;;" , 100 , 0 , 500 );
    eta_histo_add_b=fs->make<TH1F>("eta_b" , ";#eta of additional b;Events;;" , 50 , -5 , 5 );
    phi_histo_add_b=fs->make<TH1F>("phi_b" , ";#phi of additional b;Events;;" , 50 , -5 , 5 );
+   invMass=fs->make<TH1F>("invMass",";mass;Events;;",500,200.,700.);
 }
 
 
@@ -131,43 +142,57 @@ NtupleGenJet::~NtupleGenJet()
 void
 NtupleGenJet::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+  noOfGenParticle++;
+  edm::Handle<reco::GenParticleCollection> genParticles;
+  iEvent.getByToken(genparticlesToken, genParticles);
+  //for(reco::GenParticle jet : *(gen_h.product())){
+  // for(const auto& jet : genparticles){ 
+  for(size_t i = 0; i < genParticles->size(); ++ i) {
+    const reco::GenParticle & p = (*genParticles)[i];
+    int id = p.pdgId();
+    //     noOfGenParticle++;
+    //int st = p.status();  
+    //     double pt = p.pt(), eta = p.eta(), phi = p.phi(), mass = p.mass();
+    //std::cout << "pdg id =  "<< id << std::endl;
+    if (id == 8 || id == -8){ // check if it is T/Tprime
+      //nTPrimeId->Fill(id);
+      int n = p.numberOfDaughters();
+      if(n < 2 ) continue;
+      nTPrimeId->Fill(id);
+      //std::cout << "number of daughter:  " << n << std::endl;
+      const reco::Candidate * d1 = p.daughter( 0 );
+      const reco::Candidate * d2 = p.daughter( 1 );
+      //std::cout << "pdg id of d1=  " << d1->pdgId() << " pdg id of d2=  " << d2->pdgId() << std::endl;
+      
+      if ((std::abs(d1->pdgId())==6 && std::abs(d2->pdgId())==21) || (std::abs(d1->pdgId())==21 && std::abs(d2->pdgId())==6)) // 
+	{
+	  const reco::Candidate * mom = p.mother();
+	  if (std::abs(mom->pdgId()) != 8) continue;
 
-    edm::Handle<reco::GenParticleCollection> genParticles;
-    iEvent.getByToken(genparticlesToken, genParticles);
-//for(reco::GenParticle jet : *(gen_h.product())){
- // for(const auto& jet : genparticles){ 
-   for(size_t i = 0; i < genParticles->size(); ++ i) {
-     const reco::GenParticle & p = (*genParticles)[i];
-     int id = p.pdgId();
-     //int st = p.status();  
-     //     double pt = p.pt(), eta = p.eta(), phi = p.phi(), mass = p.mass();
-     //std::cout << "pdg id =  "<< id << std::endl;
-     if (id == 25){ // check if it is H
-       int n = p.numberOfDaughters();
-       if(n < 2 ) continue;
-       //std::cout << "number of daughter:  " << n << std::endl;
-       const reco::Candidate * d1 = p.daughter( 0 );
-       const reco::Candidate * d2 = p.daughter( 1 );
-       //std::cout << "pdg id of d1=  " << d1->pdgId() << " pdg id of d2=  " << d2->pdgId() << std::endl;
-       
-       if (std::abs(d1->pdgId())==15 && std::abs(d2->pdgId())==15){ // check when H decays to tau tau
-	 ++genHiggs_n_;
-	 nHiggs_histo->Fill(genHiggs_n_); // mind it will give a flat histogram at "1" for every entries
-	 pt_histo->Fill(p.pt());
-	 eta_histo->Fill(p.eta());
-	 phi_histo ->Fill(p.phi());
-	 mass_histo->Fill(p.mass());
-	 //// plotting for b's
-	 pt_histo_lead_b->Fill(d1->pt());
-	 eta_histo_lead_b->Fill(d1->eta());
-	 phi_histo_lead_b->Fill(d1->phi());
-	 
-	 pt_histo_sublead_b->Fill(d2->pt());
-	 eta_histo_sublead_b->Fill(d2->eta());
-	 phi_histo_sublead_b->Fill(d2->phi());
-       }
-     }
-     
+	  nHiggs_histo->Fill(genHiggs_n_); // mind it will give a histogram at "1" for every entries
+	  pt_histo->Fill(p.pt());
+	  eta_histo->Fill(p.eta());
+	  phi_histo ->Fill(p.phi());
+	  mass_histo->Fill(p.mass());
+	  //// plotting for all daughters perperties
+	  
+	  pt_histo_lead_b->Fill(d1->pt()); 
+	  eta_histo_lead_b->Fill(d1->eta());
+	  phi_histo_lead_b->Fill(d1->phi());
+	  
+	  pt_histo_sublead_b->Fill(d2->pt());
+	  eta_histo_sublead_b->Fill(d2->eta());
+	  phi_histo_sublead_b->Fill(d2->phi());
+	  
+	  // calculate invariant mass
+	  genLead.SetPxPyPzE(d1->px(),d1->py(),d1->pz(),d1->energy());
+	  genSublead.SetPxPyPzE(d2->px(),d2->py(),d2->pz(),d2->energy());
+	  MyLorentzVector diElectron = genLead + genSublead;
+	  invMass->Fill(diElectron.M());
+	  
+	}
+    }
+     /*
      if(id == 5 || id == -5){
        const reco::Candidate * mom = p.mother();
        if (mom->pdgId()!=25){
@@ -176,7 +201,9 @@ NtupleGenJet::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	 phi_histo_add_b->Fill(p.phi());
        }
      }
+     */
    }
+  //   std::cout << "noOfGenParticle: " << noOfGenParticle << endl;
 }
 
 
